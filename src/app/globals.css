@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+
+/* Variables CSS */
+:root {
+  --color-morado:   #5419E6;
+  --color-crema:    #E0DBE5;
+  --color-amarillo: #F8E800;
+  --color-rosa:     #AC80C6;
+}
