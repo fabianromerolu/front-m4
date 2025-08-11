@@ -16,14 +16,27 @@ function hasMessage(data: unknown): data is MessageShape {
   );
 }
 
+function withNgrokBypass(href: string, baseHeaders: HeadersInit = {}): HeadersInit {
+  const isNgrok = href.includes("ngrok");
+  return isNgrok
+    ? { ...baseHeaders, "ngrok-skip-browser-warning": "true" }
+    : baseHeaders;
+}
+
 async function requestJSON<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+  const href = typeof input === "string" ? input : (input as URL).toString();
+
   const res = await fetch(input, {
     ...init,
-    headers: {
-      Accept: "application/json",
-      ...(init?.headers || {}),
-    },
+    headers: withNgrokBypass(
+      href,
+      {
+        Accept: "application/json",
+        ...(init?.headers || {}),
+      }
+    ),
     cache: "no-store",
+    // mode: "cors", // opcional
   });
 
   const contentType = res.headers.get("content-type") || "";
@@ -32,9 +45,7 @@ async function requestJSON<T>(input: RequestInfo | URL, init?: RequestInit): Pro
   if (!contentType.includes("application/json")) {
     const snippet = raw.slice(0, 200).replace(/\s+/g, " ");
     throw new Error(
-      `Respuesta no JSON (status ${res.status}) desde ${
-        typeof input === "string" ? input : (input as URL).toString()
-      }. Body: ${snippet}`
+      `Respuesta no JSON (status ${res.status}) desde ${href}. Body: ${snippet}`
     );
   }
 
@@ -58,11 +69,11 @@ export async function fetchProducts(): Promise<Product[]> {
 }
 
 export async function fetchProductById(id: string): Promise<Product> {
-  // Intento directo a /products/:id (si existe en tu backend)
+  // 1) Intento directo a /products/:id
   try {
     return await requestJSON<Product>(`${API}/products/${id}`);
   } catch {
-    // Fallback: trae todo y filtra
+    // 2) Fallback: lista + filtro
     const all = await requestJSON<Product[]>(`${API}/products`);
     const found = all.find((p) => String(p.id) === String(id));
     if (!found) throw new Error(`Producto con ID ${id} no encontrado`);
