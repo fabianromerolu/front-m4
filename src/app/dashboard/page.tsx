@@ -1,4 +1,5 @@
 // src/app/dashboard/page.tsx
+// src/app/dashboard/page.tsx
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
@@ -8,56 +9,39 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  FaUser,
-  FaMapMarkerAlt,
-  FaEnvelope,
-  FaPhone,
-  FaIdCard,
-  FaShoppingCart,
-} from "react-icons/fa";
+import { FaUser, FaMapMarkerAlt, FaEnvelope, FaPhone, FaIdCard, FaShoppingCart } from "react-icons/fa";
 import { FiLogOut, FiShoppingBag } from "react-icons/fi";
 
-type OrderProduct = {
-  id: number;
-  name: string;
-  price: number;
-  image?: string;
-  description?: string;
-};
-
-type Order = {
-  id: number;
-  date: string; // ISO
-  status: "approved" | "pending" | "rejected" | string;
-  products: OrderProduct[];
-};
+type OrderProduct = { id: number; name: string; price: number; image?: string; description?: string };
+type Order = { id: number; date: string; status: "approved" | "pending" | "rejected" | string; products: OrderProduct[] };
 
 const Dashboard = () => {
-  // ✅ una sola llamada al hook
   const { dataUser, logout } = useAuth();
 
   const [orders, setOrders] = useState<Order[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [errorOrders, setErrorOrders] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<Record<number, boolean>>({});
-  const [isLoggingOut, setIsLoggingOut] = useState(false); // ⚑ evita doble navegación
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
+
+  const sortedOrders = useMemo(
+    () => [...orders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
+    [orders]
+  );
 
   const handleLogout = () => {
     setIsLoggingOut(true);
     logout();
-    router.replace(PATHROUTES.HOME); // una sola navegación
+    router.replace(PATHROUTES.HOME);
   };
 
-  // Redirección si no hay sesión (evita redirigir si venimos de logout)
   useEffect(() => {
     if (!dataUser && !isLoggingOut) {
       router.replace(PATHROUTES.LOGIN);
     }
   }, [dataUser, isLoggingOut, router]);
 
-  // Carga de órdenes
   useEffect(() => {
     const fetchData = async () => {
       if (!dataUser?.token) return;
@@ -76,7 +60,6 @@ const Dashboard = () => {
     if (dataUser?.token) fetchData();
   }, [dataUser?.token]);
 
-  // Loader mientras validamos sesión (pero no durante logout controlado)
   if (!dataUser && !isLoggingOut) {
     return (
       <div className="w-full h-screen flex items-center justify-center bg-[var(--color-crema)]">
@@ -85,26 +68,16 @@ const Dashboard = () => {
     );
   }
 
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(value);
-
+  const formatCurrency = (v: number) =>
+    new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(v);
   const formatDate = (iso: string) =>
-    new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeStyle: "short" }).format(
-      new Date(iso)
-    );
-
-  const sortedOrders = useMemo(
-    () => [...orders].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-    [orders]
-  );
-
+    new Intl.DateTimeFormat("es-ES", { dateStyle: "medium", timeStyle: "short" }).format(new Date(iso));
   const orderTotal = (o: Order) => o.products.reduce((s, p) => s + (p.price ?? 0), 0);
-
-  const statusBadge = (status: string) => {
+  const statusBadge = (s: string) => {
     const base = "inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold";
-    if (status === "approved") return `${base} bg-green-100 text-green-700`;
-    if (status === "pending") return `${base} bg-amber-100 text-amber-700`;
-    if (status === "rejected") return `${base} bg-rose-100 text-rose-700`;
+    if (s === "approved") return `${base} bg-green-100 text-green-700`;
+    if (s === "pending") return `${base} bg-amber-100 text-amber-700`;
+    if (s === "rejected") return `${base} bg-rose-100 text-rose-700`;
     return `${base} bg-gray-100 text-gray-700`;
   };
 
@@ -116,15 +89,9 @@ const Dashboard = () => {
           <div className="p-6 md:p-8 bg-gradient-to-r from-[var(--color-morado)] to-[var(--color-rosa)]">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-2xl font-bold text-white">
-                  ¡Bienvenido de vuelta, {dataUser?.user?.name}!
-                </h2>
-                <p className="text-white/90 mt-2">
-                  Aquí puedes administrar tu información personal y revisar tus órdenes.
-                </p>
+                <h2 className="text-2xl font-bold text-white">¡Bienvenido de vuelta, {dataUser?.user?.name}!</h2>
+                <p className="text-white/90 mt-2">Aquí puedes administrar tu información personal y revisar tus órdenes.</p>
               </div>
-
-              {/* Botón Cerrar sesión */}
               <button
                 onClick={handleLogout}
                 aria-label="Cerrar sesión"
@@ -138,7 +105,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* User Info Grid (solo si hay dataUser) */}
+        {/* User Info */}
         {dataUser && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             {/* Profile Card */}
@@ -211,7 +178,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Orders Section */}
+        {/* Orders */}
         <section>
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between">
@@ -253,18 +220,10 @@ const Dashboard = () => {
                     <li key={o.id} className="p-6">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                          <p className="text-sm text-gray-500">
-                            Orden #{o.id} • {formatDate(o.date)}
-                          </p>
+                          <p className="text-sm text-gray-500">Orden #{o.id} • {formatDate(o.date)}</p>
                           <div className="mt-1 flex items-center gap-3">
                             <span className={statusBadge(o.status)}>
-                              {o.status === "approved"
-                                ? "Aprobada"
-                                : o.status === "pending"
-                                ? "Pendiente"
-                                : o.status === "rejected"
-                                ? "Rechazada"
-                                : o.status}
+                              {o.status === "approved" ? "Aprobada" : o.status === "pending" ? "Pendiente" : o.status === "rejected" ? "Rechazada" : o.status}
                             </span>
                             <span className="text-sm text-gray-600">
                               {o.products.length} {o.products.length === 1 ? "producto" : "productos"}
@@ -273,9 +232,7 @@ const Dashboard = () => {
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <span className="text-lg font-semibold text-[var(--color-morado)]">
-                            {formatCurrency(total)}
-                          </span>
+                          <span className="text-lg font-semibold text-[var(--color-morado)]">{formatCurrency(total)}</span>
                           <button
                             onClick={() => setExpanded((prev) => ({ ...prev, [o.id]: !prev[o.id] }))}
                             className="px-4 py-2 rounded-full border border-[var(--color-morado)]/20 text-[var(--color-morado)] hover:bg-[var(--color-rosa)] hover:text-white transition"
@@ -288,19 +245,10 @@ const Dashboard = () => {
                       {isOpen && (
                         <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                           {o.products.map((p) => (
-                            <div
-                              key={p.id}
-                              className="flex items-center gap-4 rounded-lg border border-gray-100 p-3 shadow-sm"
-                            >
+                            <div key={p.id} className="flex items-center gap-4 rounded-lg border border-gray-100 p-3 shadow-sm">
                               <div className="h-16 w-16 rounded-md overflow-hidden bg-gray-100">
                                 {p.image ? (
-                                  <Image
-                                    src={p.image}
-                                    alt={p.name}
-                                    width={64}
-                                    height={64}
-                                    className="h-16 w-16 object-cover"
-                                  />
+                                  <Image src={p.image} alt={p.name} width={64} height={64} className="h-16 w-16 object-cover" />
                                 ) : (
                                   <div className="h-16 w-16 grid place-items-center text-gray-400">
                                     <FiShoppingBag />

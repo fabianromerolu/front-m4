@@ -1,12 +1,11 @@
  //src/app/page.tsx
-import mockProducts from "@/utils/mockProducts";
-import Card from "@/components/Card";
-import { Product } from "@/interfaces/Product";
+// src/app/page.tsx
 import { fetchProducts } from "@/services/productsFetcher.service";
-
+import Card from "@/components/Card";
 
 export default async function Home() {
   const productsPreload = await fetchProducts();
+
   return (
     <main className="min-h-screen bg-[var(--color-crema)]">
       {/* Hero Section */}
@@ -45,12 +44,8 @@ export default async function Home() {
       {/* Call to Action */}
       <section className="bg-[var(--color-morado)] text-white py-16 px-4">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold mb-6 font-serif">
-            Join Our Community
-          </h2>
-          <p className="text-xl mb-8">
-            Subscribe to receive exclusive offers and updates
-          </p>
+          <h2 className="text-3xl font-bold mb-6 font-serif">Join Our Community</h2>
+          <p className="text-xl mb-8">Subscribe to receive exclusive offers and updates</p>
           <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
             <input
               type="email"
@@ -71,34 +66,15 @@ export default async function Home() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {[
-            {
-              quote: "The quality exceeded my expectations!",
-              author: "María G.",
-              role: "Premium Client"
-            },
-            {
-              quote: "Fast delivery and excellent customer service.",
-              author: "Carlos P.",
-              role: "Frequent Buyer"
-            },
-            {
-              quote: "Beautiful products that last over time.",
-              author: "Ana L.",
-              role: "Interior Designer"
-            }
-          ].map((testimonial, index) => (
-            <div 
-              key={index}
-              className="bg-[var(--color-crema)] p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow"
-            >
-              <div className="text-[var(--color-morado)] text-4xl mb-4">"</div>
-              <p className="text-gray-700 mb-4">{testimonial.quote}</p>
-              <div className="text-[var(--color-rosa)] font-medium">
-                {testimonial.author}
-              </div>
-              <div className="text-gray-500 text-sm">
-                {testimonial.role}
-              </div>
+            { quote: "The quality exceeded my expectations!", author: "María G.", role: "Premium Client" },
+            { quote: "Fast delivery and excellent customer service.", author: "Carlos P.", role: "Frequent Buyer" },
+            { quote: "Beautiful products that last over time.", author: "Ana L.", role: "Interior Designer" },
+          ].map((t, i) => (
+            <div key={i} className="bg-[var(--color-crema)] p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow">
+              <div className="text-[var(--color-morado)] text-4xl mb-4">&quot;</div> {/* ✅ escapado */}
+              <p className="text-gray-700 mb-4">{t.quote}</p>
+              <div className="text-[var(--color-rosa)] font-medium">{t.author}</div>
+              <div className="text-gray-500 text-sm">{t.role}</div>
             </div>
           ))}
         </div>

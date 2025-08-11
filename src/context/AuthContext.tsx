@@ -71,7 +71,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // delete axiosInstance.defaults.headers.common["Authorization"];
   }, []);
 
-  const isAuthenticated = useMemo(() => !!dataUser && Object.keys(dataUser as any).length > 0, [dataUser]);
+  // fragmento dentro de AuthContext
+  // const isAuthenticated = useMemo(() => !!dataUser && Object.keys(dataUser as any).length > 0, [dataUser]);
+  const isAuthenticated = useMemo(() => Boolean(dataUser?.token), [dataUser]);
+
 
   return (
     <AuthContext.Provider value={{ dataUser, setDataUser, login, logout, isAuthenticated }}>

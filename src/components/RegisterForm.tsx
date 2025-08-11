@@ -1,8 +1,9 @@
+//src/components/RegisterForm.tsx
 "use client"
 import { useFormik } from 'formik';
 import { RegisterFormValues, registerInitialValues, registerValidationSchema } from '@/validators/registerSchema';
 import { RegisterUser } from '@/services/auth.service';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import PATHROUTES from '@/utils/pathRoutes';
 
@@ -11,51 +12,53 @@ const RegisterForm = () => {
   const [countdown, setCountdown] = useState(5);
   const router = useRouter();
 
+  const handleLoginRedirect = useCallback(() => {
+    setShowSuccessModal(false);
+    router.push(PATHROUTES.LOGIN);
+  }, [router]);
+
   // Temporizador para redirección automática
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     if (showSuccessModal && countdown > 0) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      timer = setTimeout(() => setCountdown((c) => c - 1), 1000);
     } else if (showSuccessModal && countdown === 0) {
       handleLoginRedirect();
     }
-    return () => clearTimeout(timer);
-  }, [showSuccessModal, countdown]);
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [showSuccessModal, countdown, handleLoginRedirect]);
 
   // Cerrar modal con ESC
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && showSuccessModal) {
+      if (event.key === "Escape" && showSuccessModal) {
         setShowSuccessModal(false);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
   }, [showSuccessModal]);
 
   const formik = useFormik<RegisterFormValues>({
     initialValues: registerInitialValues,
     validationSchema: registerValidationSchema,
-    onSubmit: async (values, { resetForm, setSubmitting }) => {
+    onSubmit: async (values, { resetForm, setSubmitting, setStatus }) => {
       try {
         const res = await RegisterUser(values);
-        console.log('Registro exitoso:', res);
+        console.log("Registro exitoso:", res);
         resetForm();
         setShowSuccessModal(true);
-        setCountdown(5); // Reiniciar contador
+        setCountdown(5);
       } catch (error) {
-        console.error('Error en el registro:', error);
-        formik.setStatus({ error: 'Ocurrió un error durante el registro. Por favor intenta nuevamente.' });
+        console.error("Error en el registro:", error);
+        setStatus({ error: "Ocurrió un error durante el registro. Por favor intenta nuevamente." });
       } finally {
         setSubmitting(false);
       }
-    }
+    },
   });
-
-  const handleLoginRedirect = () => {
-    setShowSuccessModal(false);
-    router.push(PATHROUTES.LOGIN);
-  };
 
   const handleCloseModal = () => {
     setShowSuccessModal(false);

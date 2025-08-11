@@ -14,14 +14,8 @@ const NavBar = () => {
   const [cartCount, setCartCount] = useState(0);
 
   // Estado de sesión robusto
-  const isLoggedIn = useMemo(() => {
-    if (!dataUser) return false;
-    try {
-      return Object.keys(dataUser as any).length > 0;
-    } catch {
-      return false;
-    }
-  }, [dataUser]);
+  const isLoggedIn = useMemo(() => Boolean(dataUser?.token), [dataUser]);
+
 
   // shrink + sombra al hacer scroll
   useEffect(() => {

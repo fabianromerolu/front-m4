@@ -1,7 +1,7 @@
 // src/app/product/[id]/page.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -15,7 +15,7 @@ type ToastType = "success" | "warning" | "error" | "info";
 export default function ProductPageId() {
   const { dataUser } = useAuth();
 
-  const params = useParams();
+  const params = useParams<{ id: string }>();
   const productId = useMemo(() => {
     const id = params?.id;
     return Array.isArray(id) ? id[0] : (id as string | undefined);
@@ -26,11 +26,20 @@ export default function ProductPageId() {
 
   // Toast state
   const [toast, setToast] = useState<{ type: ToastType; message: string } | null>(null);
+  const toastTimeoutRef = useRef<number | null>(null);
+
   const showToast = (type: ToastType, message: string, ms = 2800) => {
     setToast({ type, message });
-    window.clearTimeout((showToast as any)._t);
-    (showToast as any)._t = window.setTimeout(() => setToast(null), ms);
+    if (toastTimeoutRef.current) {
+      window.clearTimeout(toastTimeoutRef.current);
+    }
+    toastTimeoutRef.current = window.setTimeout(() => setToast(null), ms);
   };
+  useEffect(() => {
+    return () => {
+      if (toastTimeoutRef.current) window.clearTimeout(toastTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     async function fetchData() {

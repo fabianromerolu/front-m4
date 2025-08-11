@@ -1,5 +1,5 @@
 //src/app/cart/page.tsx
-"use client"
+"use client";
 
 import { useEffect, useState } from "react";
 import { Product } from "@/interfaces/Product";
@@ -13,55 +13,50 @@ import Link from "next/link";
 const Cart = () => {
   const [cart, setCart] = useState<Product[]>([]);
   const [total, setTotal] = useState<number>(0);
-  const {dataUser} = useAuth();
+  const { dataUser } = useAuth();
 
   useEffect(() => {
-    const storedCart = JSON.parse(localStorage.getItem('cart') || "[]");
-    if(storedCart){
-      let totalCartPrice = 0;
-      storedCart.forEach((product:Product) => {
-        totalCartPrice = totalCartPrice + product.price;
-      });
+    const storedCart: Product[] = JSON.parse(localStorage.getItem("cart") || "[]");
+    if (storedCart) {
+      const totalCartPrice = storedCart.reduce((s, p) => s + (p.price ?? 0), 0);
       setTotal(totalCartPrice);
       setCart(storedCart);
     }
   }, []);
 
-  const handleRemoveItem = (productId: string) => {
-    const updatedCart = cart.filter(product => product.id !== Number(productId));
+  const handleRemoveItem = (productId: number) => {
+    const updatedCart = cart.filter((p) => p.id !== productId);
     setCart(updatedCart);
-    localStorage.setItem('cart', JSON.stringify(updatedCart));
-    
-    // Recalcular total
-    const newTotal = updatedCart.reduce((sum, product) => sum + product.price, 0);
-    setTotal(newTotal);
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
+    setTotal(updatedCart.reduce((sum, p) => sum + (p.price ?? 0), 0));
   };
 
-  const handleCheckout = async() => {
-    if(cart.length === 0) {
+  const handleCheckout = async () => {
+    if (cart.length === 0) {
       alert("Tu carrito está vacío");
       return;
     }
-    
+    if (!dataUser?.token) {
+      alert("Debes iniciar sesión para completar la compra");
+      return;
+    }
     try {
-      const idProducts = cart.map((product) => product.id);
-      await createOrder(idProducts, dataUser?.token!);
+      const idProducts = cart.map((p) => p.id);
+      await createOrder(idProducts, dataUser.token); // ✅ sin non-null
       alert("¡Compra exitosa!");
       setCart([]);
       setTotal(0);
-      localStorage.removeItem('cart');
+      localStorage.removeItem("cart");
+      // (opcional) notificar a la navbar
+      window.dispatchEvent(new CustomEvent("cartUpdated"));
     } catch (error) {
       alert("Ocurrió un error al procesar tu compra");
       console.error(error);
     }
   };
 
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('es-MX', {
-      style: 'currency',
-      currency: 'MXN'
-    }).format(price);
-  };
+  const formatPrice = (price: number) =>
+    new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(price);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
@@ -76,7 +71,7 @@ const Cart = () => {
             <FaShoppingCart className="mr-3" />
             Mi Carrito
           </h1>
-          <div className="w-24"></div> {/* Spacer para alinear */}
+          <div className="w-24" />
         </div>
 
         {cart.length === 0 ? (
@@ -84,8 +79,8 @@ const Cart = () => {
             <FiShoppingBag className="mx-auto text-5xl text-gray-300 mb-4" />
             <h2 className="text-2xl font-semibold text-gray-700 mb-2">Tu carrito está vacío</h2>
             <p className="text-gray-500 mb-6">Agrega algunos productos para comenzar</p>
-            <Link 
-              href="/" 
+            <Link
+              href="/"
               className="px-6 py-3 rounded-full bg-[var(--color-morado)] text-white hover:bg-[var(--color-rosa)] transition-colors duration-300 inline-flex items-center shadow-lg hover:shadow-[var(--color-rosa)/40]"
             >
               Explorar productos
@@ -93,15 +88,15 @@ const Cart = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Lista de productos */}
+            {/* Lista */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-xl shadow-md overflow-hidden">
                 <div className="p-6 border-b border-gray-200">
                   <h2 className="text-xl font-semibold text-gray-800">
-                    {cart.length} {cart.length === 1 ? 'producto' : 'productos'} en tu carrito
+                    {cart.length} {cart.length === 1 ? "producto" : "productos"} en tu carrito
                   </h2>
                 </div>
-                
+
                 <div className="divide-y divide-gray-200">
                   {cart.map((product) => (
                     <div key={product.id} className="p-6 flex flex-col sm:flex-row">
@@ -114,20 +109,20 @@ const Cart = () => {
                           className="object-cover rounded-lg h-30 w-30 group-hover:scale-105 transition-transform duration-500"
                         />
                       </div>
-                      
+
                       <div className="flex-grow">
                         <div className="flex justify-between">
                           <h3 className="text-lg font-medium text-gray-800">{product.name}</h3>
-                          <button 
-                            onClick={() => handleRemoveItem(String(product.id))}
+                          <button
+                            onClick={() => handleRemoveItem(product.id)}
                             className="text-gray-400 hover:text-[var(--color-rosa)] transition-colors"
                           >
                             <FaTrash />
                           </button>
                         </div>
-                        
+
                         <p className="mt-2 text-gray-600">{product.description?.substring(0, 100)}...</p>
-                        
+
                         <div className="mt-4 flex items-center justify-between">
                           <span className="text-lg font-bold text-[var(--color-morado)]">
                             {formatPrice(product.price)}
@@ -143,32 +138,30 @@ const Cart = () => {
                 </div>
               </div>
             </div>
-            
-            {/* Resumen de compra */}
+
+            {/* Resumen */}
             <div>
               <div className="bg-white rounded-xl shadow-md p-6 sticky top-6">
                 <h2 className="text-xl font-semibold text-gray-800 mb-6">Resumen de compra</h2>
-                
+
                 <div className="space-y-4">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Subtotal</span>
                     <span className="font-medium">{formatPrice(total)}</span>
                   </div>
-                  
+
                   <div className="flex justify-between">
                     <span className="text-gray-600">Envío</span>
                     <span className="font-medium">{formatPrice(0)}</span>
                   </div>
-                  
+
                   <div className="border-t border-gray-200 pt-4 mt-4">
                     <div className="flex justify-between">
                       <span className="text-lg font-semibold">Total</span>
-                      <span className="text-xl font-bold text-[var(--color-morado)]">
-                        {formatPrice(total)}
-                      </span>
+                      <span className="text-xl font-bold text-[var(--color-morado)]">{formatPrice(total)}</span>
                     </div>
                   </div>
-                  
+
                   <button
                     onClick={handleCheckout}
                     className="w-full mt-6 px-6 py-3 rounded-full bg-[var(--color-morado)] text-white hover:bg-[var(--color-rosa)] transition-colors duration-300 flex items-center justify-center shadow-lg hover:shadow-[var(--color-rosa)/40]"
@@ -176,9 +169,9 @@ const Cart = () => {
                     <FiShoppingBag className="mr-2" />
                     Proceder al pago
                   </button>
-                  
+
                   <p className="text-center text-sm text-gray-500 mt-4">
-                    o{' '}
+                    o{" "}
                     <Link href="/" className="text-[var(--color-morado)] hover:underline">
                       continuar comprando
                     </Link>
