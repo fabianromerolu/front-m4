@@ -1,73 +1,58 @@
-// front/src/utils/productsFetcher.utils.ts
-
+// src/services/productsFetcher.service.ts
 import { Product } from "@/interfaces/Product";
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-/**
- * fetchProducts
- * -------------
- * Realiza una petición GET al endpoint /products para obtener
- * el listado completo de productos.
- *
- * @returns Promise<Product[]> arreglo de productos
- * @throws Error si la petición falla o devuelve un status != 2xx
- */
-export const fetchProducts = async (): Promise<Product[]> => {
-  try {
-    const res = await fetch(`${apiUrl}/products`, {
-      method: "GET",
-    });
 
-    // 1. Verificar que la respuesta sea exitosa (status 200–299)
-    if (!res.ok) {
-      // Lanza un error con el código de estado
-      throw new Error(`HTTP error! status: ${res.status}`);
-    }
+const API = process.env.NEXT_PUBLIC_API_URL as string;
 
-    // 2. Parsear JSON en el tipo Product[]
-    const products: Product[] = await res.json();
-    return products;
-  } catch (error: unknown) {
-    // 3. Manejo genérico de errores de red o parsing
-    //    error puede ser Error u otro tipo, por eso lo convertimos a string
-    const message =
-      error instanceof Error
-        ? error.message
-        : String(error);
-    throw new Error(`fetchProducts falló: ${message}`);
+// Utilidad: asegura JSON y da diagnóstico si viene HTML
+async function requestJSON<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+  const res = await fetch(input, {
+    ...init,
+    headers: {
+      Accept: "application/json",
+      ...(init?.headers || {}),
+    },
+    cache: "no-store",
+  });
+
+  const contentType = res.headers.get("content-type") || "";
+  const raw = await res.text();
+
+  // Si no viene JSON, lanza error con snippet del body para depurar
+  if (!contentType.includes("application/json")) {
+    const snippet = raw.slice(0, 200).replace(/\s+/g, " ");
+    throw new Error(
+      `Respuesta no JSON (status ${res.status}) desde ${typeof input === "string" ? input : (input as URL).toString()}. Body: ${snippet}`
+    );
   }
-};
 
-/**
- * fetchProductById
- * ----------------
- * Obtiene un único producto a partir de su ID.
- * Actualmente reutiliza fetchProducts para no duplicar lógicas,
- * pero idealmente podrías exponer un endpoint /products/:id.
- *
- * @param id ID del producto como string
- * @returns Promise<Product> objeto Product
- * @throws Error si no encuentra el producto o falla la petición
- */
-export const fetchProductById = async (id: string): Promise<Product> => {
+  let data: unknown;
   try {
-    // 1. Traer todo el catálogo
-    const products = await fetchProducts();
-
-    // 2. Buscar el producto cuyo id coincida (convertimos ambos a string)
-    const product = products.find((p) => p.id.toString() === id);
-
-    // 3. Si no lo encuentra, lanzamos error específico
-    if (!product) {
-      throw new Error(`Producto con ID ${id} no encontrado`);
-    }
-
-    return product;
-  } catch (error: unknown) {
-    // 4. Si falló fetchProducts o la búsqueda, pasamos mensaje claro
-    const message =
-      error instanceof Error
-        ? error.message
-        : String(error);
-    throw new Error(`fetchProductById falló: ${message}`);
+    data = raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    throw new Error(`JSON inválido (status ${res.status}): ${(e as Error).message}`);
   }
-};
+
+  if (!res.ok) {
+    const msg = (data as any)?.message || `HTTP ${res.status}`;
+    throw new Error(String(msg));
+  }
+
+  return data as T;
+}
+
+export async function fetchProducts(): Promise<Product[]> {
+  return requestJSON<Product[]>(`${API}/products`);
+}
+
+export async function fetchProductById(id: string): Promise<Product> {
+  // 1) Intento directo a /products/:id (si tu backend lo tiene)
+  try {
+    return await requestJSON<Product>(`${API}/products/${id}`);
+  } catch {
+    // 2) Fallback: trae todo y filtra
+    const all = await requestJSON<Product[]>(`${API}/products`);
+    const found = all.find((p) => String(p.id) === String(id));
+    if (!found) throw new Error(`Producto con ID ${id} no encontrado`);
+    return found;
+  }
+}

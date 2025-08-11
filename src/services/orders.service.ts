@@ -1,34 +1,62 @@
-const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-export const createOrder = async (products: number[], token: string ) => {
-    //mi endponit solo espera un arreglo de IDs de productos
-    try {
-        const res = await fetch(`${apiUrl}/orders`,{
-            method: 'POST',
-            headers:{
-                'Content-Type': 'application/json',
-                Authorization: token,
-            },
-            body: JSON.stringify({products}), 
-        });
-        const orders = await res.json();
-        return orders;
-    } catch (error) {
-        throw new Error(error as string);
-    }
+// src/services/orders.service.ts
+const API = process.env.NEXT_PUBLIC_API_URL as string;
+
+type Json = unknown;
+
+async function requestJSON<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
+  const res = await fetch(input, {
+    ...init,
+    headers: {
+      Accept: "application/json",
+      ...(init?.headers || {}),
+    },
+    cache: "no-store",
+  });
+
+  const contentType = res.headers.get("content-type") || "";
+  const raw = await res.text();
+
+  if (!contentType.includes("application/json")) {
+    const snippet = raw.slice(0, 200).replace(/\s+/g, " ");
+    throw new Error(
+      `Respuesta no JSON (status ${res.status}) desde ${typeof input === "string" ? input : (input as URL).toString()}. Body: ${snippet}`
+    );
+  }
+
+  let data: Json;
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    throw new Error(`JSON inválido (status ${res.status}): ${(e as Error).message}`);
+  }
+
+  if (!res.ok) {
+    const msg = (data as any)?.message || `HTTP ${res.status}`;
+    throw new Error(String(msg));
+  }
+
+  return data as T;
+}
+
+function authHeaders(token: string) {
+  const value = token?.startsWith("Bearer ") ? token : `Bearer ${token}`;
+  return {
+    Authorization: value,
+    "Content-Type": "application/json",
+  };
+}
+
+export const createOrder = async (products: number[], token: string) => {
+  return requestJSON(`${API}/orders`, {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ products }),
+  });
 };
 
 export const getAllOrders = async (token: string) => {
-        try {
-        const res = await fetch(`${apiUrl}/users/orders`,{
-            method: 'GET',
-            cache: 'no-cache',
-            headers:{
-                Authorization: token,
-            }
-        });
-        const orders = await res.json();
-        return orders;
-    } catch (error) {
-        throw new Error(error as string);
-    }
-}
+  return requestJSON(`${API}/users/orders`, {
+    method: "GET",
+    headers: authHeaders(token),
+  });
+};
