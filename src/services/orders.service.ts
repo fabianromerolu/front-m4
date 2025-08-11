@@ -2,6 +2,17 @@
 const API = process.env.NEXT_PUBLIC_API_URL as string;
 
 type Json = unknown;
+type MessageShape = { message?: string };
+type UnknownRecord = Record<string, unknown>;
+
+function hasMessage(data: unknown): data is MessageShape {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "message" in (data as UnknownRecord) &&
+    typeof (data as UnknownRecord).message === "string"
+  );
+}
 
 async function requestJSON<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const res = await fetch(input, {
@@ -19,7 +30,9 @@ async function requestJSON<T>(input: RequestInfo | URL, init?: RequestInit): Pro
   if (!contentType.includes("application/json")) {
     const snippet = raw.slice(0, 200).replace(/\s+/g, " ");
     throw new Error(
-      `Respuesta no JSON (status ${res.status}) desde ${typeof input === "string" ? input : (input as URL).toString()}. Body: ${snippet}`
+      `Respuesta no JSON (status ${res.status}) desde ${
+        typeof input === "string" ? input : (input as URL).toString()
+      }. Body: ${snippet}`
     );
   }
 
@@ -31,8 +44,8 @@ async function requestJSON<T>(input: RequestInfo | URL, init?: RequestInit): Pro
   }
 
   if (!res.ok) {
-    const msg = (data as any)?.message || `HTTP ${res.status}`;
-    throw new Error(String(msg));
+    const msg = hasMessage(data) ? data.message! : `HTTP ${res.status}`;
+    throw new Error(msg);
   }
 
   return data as T;

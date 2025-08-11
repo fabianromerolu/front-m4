@@ -3,7 +3,19 @@ import { Product } from "@/interfaces/Product";
 
 const API = process.env.NEXT_PUBLIC_API_URL as string;
 
-// Utilidad: asegura JSON y da diagnóstico si viene HTML
+type Json = unknown;
+type MessageShape = { message?: string };
+type UnknownRecord = Record<string, unknown>;
+
+function hasMessage(data: unknown): data is MessageShape {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "message" in (data as UnknownRecord) &&
+    typeof (data as UnknownRecord).message === "string"
+  );
+}
+
 async function requestJSON<T>(input: RequestInfo | URL, init?: RequestInit): Promise<T> {
   const res = await fetch(input, {
     ...init,
@@ -17,15 +29,16 @@ async function requestJSON<T>(input: RequestInfo | URL, init?: RequestInit): Pro
   const contentType = res.headers.get("content-type") || "";
   const raw = await res.text();
 
-  // Si no viene JSON, lanza error con snippet del body para depurar
   if (!contentType.includes("application/json")) {
     const snippet = raw.slice(0, 200).replace(/\s+/g, " ");
     throw new Error(
-      `Respuesta no JSON (status ${res.status}) desde ${typeof input === "string" ? input : (input as URL).toString()}. Body: ${snippet}`
+      `Respuesta no JSON (status ${res.status}) desde ${
+        typeof input === "string" ? input : (input as URL).toString()
+      }. Body: ${snippet}`
     );
   }
 
-  let data: unknown;
+  let data: Json;
   try {
     data = raw ? JSON.parse(raw) : {};
   } catch (e) {
@@ -33,8 +46,8 @@ async function requestJSON<T>(input: RequestInfo | URL, init?: RequestInit): Pro
   }
 
   if (!res.ok) {
-    const msg = (data as any)?.message || `HTTP ${res.status}`;
-    throw new Error(String(msg));
+    const msg = hasMessage(data) ? data.message! : `HTTP ${res.status}`;
+    throw new Error(msg);
   }
 
   return data as T;
@@ -45,11 +58,11 @@ export async function fetchProducts(): Promise<Product[]> {
 }
 
 export async function fetchProductById(id: string): Promise<Product> {
-  // 1) Intento directo a /products/:id (si tu backend lo tiene)
+  // Intento directo a /products/:id (si existe en tu backend)
   try {
     return await requestJSON<Product>(`${API}/products/${id}`);
   } catch {
-    // 2) Fallback: trae todo y filtra
+    // Fallback: trae todo y filtra
     const all = await requestJSON<Product[]>(`${API}/products`);
     const found = all.find((p) => String(p.id) === String(id));
     if (!found) throw new Error(`Producto con ID ${id} no encontrado`);
