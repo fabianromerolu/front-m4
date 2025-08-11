@@ -26,13 +26,10 @@ async function requestJSON<T>(input: RequestInfo | URL, init?: RequestInit): Pro
 
   const res = await fetch(input, {
     ...init,
-    headers: withNgrokBypass(
-      href,
-      {
-        Accept: "application/json",
-        ...(init?.headers || {}),
-      }
-    ),
+    headers: withNgrokBypass(href, {
+      Accept: "application/json",
+      ...(init?.headers || {}),
+    }),
     cache: "no-store",
   });
 
@@ -41,9 +38,7 @@ async function requestJSON<T>(input: RequestInfo | URL, init?: RequestInit): Pro
 
   if (!contentType.includes("application/json")) {
     const snippet = raw.slice(0, 200).replace(/\s+/g, " ");
-    throw new Error(
-      `Respuesta no JSON (status ${res.status}) desde ${href}. Body: ${snippet}`
-    );
+    throw new Error(`Respuesta no JSON (status ${res.status}) desde ${href}. Body: ${snippet}`);
   }
 
   let data: Json;
@@ -61,10 +56,10 @@ async function requestJSON<T>(input: RequestInfo | URL, init?: RequestInit): Pro
   return data as T;
 }
 
-function authHeaders(token: string) {
-  const value = token?.startsWith("Bearer ") ? token : `Bearer ${token}`;
+// OJO: tu API espera el token crudo, NO "Bearer <token>"
+function authHeadersRaw(token: string) {
   return {
-    Authorization: value,
+    Authorization: token, // <- sin "Bearer "
     "Content-Type": "application/json",
   };
 }
@@ -73,7 +68,7 @@ export const createOrder = async (products: number[], token: string) => {
   const url = `${API}/orders`;
   return requestJSON(url, {
     method: "POST",
-    headers: withNgrokBypass(url, authHeaders(token)),
+    headers: withNgrokBypass(url, authHeadersRaw(token)),
     body: JSON.stringify({ products }),
   });
 };
@@ -82,6 +77,6 @@ export const getAllOrders = async (token: string) => {
   const url = `${API}/users/orders`;
   return requestJSON(url, {
     method: "GET",
-    headers: withNgrokBypass(url, authHeaders(token)),
+    headers: withNgrokBypass(url, authHeadersRaw(token)),
   });
 };
