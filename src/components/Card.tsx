@@ -1,4 +1,5 @@
-import { Product } from "@/interfaces/Product";
+//src/components/Card.tsx
+import { Product, getCategoryName } from "@/interfaces/Product";
 import PATHROUTES from "@/utils/pathRoutes";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,6 +18,11 @@ function Card({ product }: { product: Product }) {
           height={300}
           className="object-cover h-full w-full group-hover:scale-105 transition-transform duration-500"
         />
+        {/* ✅ Badge de categoría (esquina superior izquierda) */}
+        <span className="absolute top-2 left-2 bg-white/90 backdrop-blur px-2 py-1 rounded-full text-xs font-medium text-[var(--color-morado)] border">
+          {getCategoryName(product.categoryId)}
+        </span>
+
         {/* Badge de stock */}
         {product.stock < 10 && (
           <span className="absolute top-2 right-2 bg-[var(--color-rosa)] text-white text-xs px-2 py-1 rounded-full">

@@ -1,4 +1,4 @@
-//esta es la estructura en la que mi back me responde al momento de loguearme
+//src/interfaces/userSession.interface.ts
 export interface UserSessionInterface {
     token: string;
     login?: boolean;

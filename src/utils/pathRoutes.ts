@@ -1,3 +1,4 @@
+//src/utils/pathRoutes.ts
 const PATHROUTES = {
     HOME: "/",
     DASHBOARD: "/dashboard",

@@ -1,4 +1,3 @@
- //src/app/page.tsx
 // src/app/page.tsx
 import { fetchProducts } from "@/services/productsFetcher.service";
 import Card from "@/components/Card";

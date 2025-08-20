@@ -1,4 +1,4 @@
-// src/app/product/[id]/page.tsx
+//src/app/product/[id]/page.tsx
 "use client";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { fetchProductById } from "@/services/productsFetcher.service";
-import { Product } from "@/interfaces/Product";
+import { Product, getCategoryName  } from "@/interfaces/Product";
 import { useAuth } from "@/context/AuthContext";
 import { FiCheckCircle, FiAlertTriangle, FiInfo, FiX } from "react-icons/fi";
 
@@ -233,7 +233,6 @@ export default function ProductPageId() {
               </div>
 
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                {/* (Opcional) selector de cantidad visual — no altera tu estructura del carrito */}
                 <div className="flex items-center border rounded-lg overflow-hidden">
                   <button className="px-4 py-2 bg-gray-100 text-[var(--color-morado)] hover:bg-gray-200">-</button>
                   <span className="px-4 py-2">1</span>
@@ -257,11 +256,11 @@ export default function ProductPageId() {
                 <ul className="space-y-2">
                   <li className="flex">
                     <span className="text-gray-600 w-32">Categoría</span>
-                    <span className="text-gray-800">Electrónicos</span>
+                    <span className="text-gray-800">{getCategoryName(productData.categoryId)}</span>
                   </li>
                   <li className="flex">
-                    <span className="text-gray-600 w-32">SKU</span>
-                    <span className="text-gray-800">DS-{productData.id}</span>
+                    <span className="text-gray-600 w-32">ID</span>
+                    <span className="text-gray-800">{productData.id}</span>
                   </li>
                   <li className="flex">
                     <span className="text-gray-600 w-32">Envío</span>
